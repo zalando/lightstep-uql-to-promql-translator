@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UQL to PromQL Translator</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>UQL to PromQL Translator</h1>
+
+        <div class="docs-links">
+            <a href="https://docs.lightstep.com/docs/uql-reference" target="_blank" class="docs-link">UQL Documentation</a>
+            <a href="https://prometheus.io/docs/prometheus/latest/querying/basics/" target="_blank" class="docs-link">PromQL Documentation</a>
+        </div>
+
+        <div class="query-section">
+            <label for="uql-input" style="margin-bottom: 8px;">UQL Query:</label>
+            <div class="input-wrapper">
+                <div id="error-overlay" class="error-overlay"></div>
+                <div id="uql-input" class="input-editable" contenteditable="true" spellcheck="false" data-placeholder="Enter your UQL query here..."></div>
+            </div>
+            <div style="font-size: 0.85em; color: #888; margin-top: 5px;">
+                Translation triggers: <kbd>Ctrl+Enter</kbd> or don't type for two seconds
+            </div>
+        </div>
+
+        <div class="query-section">
+            <div class="output-header">
+                <label for="promql-output">PromQL Output:</label>
+                <button id="copy-button" class="copy-button">Copy to Clipboard</button>
+            </div>
+            <textarea id="promql-output" readonly placeholder="Translated PromQL query will appear here..." spellcheck="false"></textarea>
+        </div>
+
+        <div id="error-message" class="error-message">
+            <div class="error-title">Translation Error:</div>
+            <div id="error-content"></div>
+        </div>
+
+
+    </div>
+
+    <script>
+        let debounceTimer;
+        const uqlInput = document.getElementById('uql-input');
+        const errorOverlay = document.getElementById('error-overlay');
+        const promqlOutput = document.getElementById('promql-output');
+        const errorMessage = document.getElementById('error-message');
+        const errorContent = document.getElementById('error-content');
+        const copyButton = document.getElementById('copy-button');
+
+        function getInputText() {
+            return uqlInput.innerText;
+        }
+
+        function highlightError(sourceIndex, sourceLength) {
+            const text = getInputText();
+            if (sourceIndex < 0 || sourceIndex >= text.length) {
+                return;
+            }
+
+            const before = text.substring(0, sourceIndex);
+            const errorText = text.substring(sourceIndex, sourceIndex + sourceLength);
+            const after = text.substring(sourceIndex + sourceLength);
+
+            const beforeNode = document.createTextNode(before);
+            const errorSpan = document.createElement('span');
+            errorSpan.className = 'error-highlight';
+            errorSpan.textContent = errorText;
+            const afterNode = document.createTextNode(after);
+
+            errorOverlay.innerHTML = '';
+            errorOverlay.appendChild(beforeNode);
+            errorOverlay.appendChild(errorSpan);
+            errorOverlay.appendChild(afterNode);
+        }
+
+        function clearErrorHighlight() {
+            errorOverlay.innerHTML = '';
+        }
+
+        async function translateQuery(query) {
+            clearErrorHighlight();
+
+            if (!query.trim()) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/translate', {
+                    method: 'POST',
+                    headers: {
+                        'content-type': 'application/json',
+                        'x-request-type': 'api',
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    promqlOutput.value = '';
+                    errorContent.textContent = `${data.error.status}\n(position: ${data.error.source_index}, length: ${data.error.source_length})`;
+                    errorMessage.classList.add('show');
+                    highlightError(data.error.source_index, data.error.source_length);
+                } else {
+                    promqlOutput.value = data.promql;
+                    clearErrorHighlight();
+                    errorMessage.classList.remove('show');
+                }
+            } catch (error) {
+                promqlOutput.value = '';
+                errorContent.textContent = 'Network error: ' + error.message;
+                errorMessage.classList.add('show');
+            }
+        }
+
+        uqlInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            clearErrorHighlight();
+            debounceTimer = setTimeout(() => {
+                translateQuery(getInputText());
+            }, 2000);
+        });
+
+        uqlInput.addEventListener('keydown', function(event) {
+            if (event.ctrlKey && event.key === 'Enter') {
+                event.preventDefault();
+                clearTimeout(debounceTimer);
+                translateQuery(getInputText());
+            }
+        });
+
+        copyButton.addEventListener('click', async function() {
+            const text = promqlOutput.value;
+            if (!text) {
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(text);
+                copyButton.textContent = 'Copied!';
+                copyButton.classList.add('copied');
+
+                setTimeout(() => {
+                    copyButton.textContent = 'Copy to Clipboard';
+                    copyButton.classList.remove('copied');
+                }, 2000);
+            } catch (error) {
+                console.error('Failed to copy:', error);
+            }
+        });
+    </script>
+</body>
+</html>
