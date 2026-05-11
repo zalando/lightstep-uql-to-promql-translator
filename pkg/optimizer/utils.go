@@ -334,3 +334,19 @@ func convertPhraseMatchOperationAST(expr *ast.InfixExpression, inverse bool) (*a
 		},
 	}, nil
 }
+
+func convertTemplateVariablesToString(expr ast.Expression) ast.Expression {
+	switch typedExpr := expr.(type) {
+	case *ast.InfixExpression:
+		typedExpr.LeftExpr = convertTemplateVariablesToString(typedExpr.LeftExpr)
+		typedExpr.RightExpr = convertTemplateVariablesToString(typedExpr.RightExpr)
+	case *ast.PrefixExpression:
+		typedExpr.Expr = convertTemplateVariablesToString(typedExpr.Expr)
+	case *ast.TemplateVariable:
+		return &ast.StringLiteral{
+			Value:    typedExpr.Value,
+			Metadata: typedExpr.Metadata,
+		}
+	}
+	return expr
+}

@@ -65,6 +65,10 @@ func isDash(char byte) bool {
 	return char == '-'
 }
 
+func isTemplateVariableBracket(char byte) bool {
+	return char == '{' || char == '}'
+}
+
 func isLiteralChar(char byte) bool {
 	return isLetter(char) || isDigit(char) || isDot(char) ||
 		isUnderscore(char) || isColon(char) || isDash(char) || isSlash(char)

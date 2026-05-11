@@ -14,6 +14,7 @@ type OptimizerConfigFilter struct {
 	ConvertExpressionToDisjunctiveNormalForm  bool
 	ConvertContainsOperationToRegexp          bool
 	ConvertPhraseMatchOperationToRegexp       bool
+	ConvertTemplateVariablesToString          bool
 }
 
 type OptimizerConfigPointFilter struct {
@@ -38,6 +39,7 @@ func DefaultOptimizerConfig() OptimizerConfig {
 			ConvertExpressionToDisjunctiveNormalForm:  true,
 			ConvertContainsOperationToRegexp:          true,
 			ConvertPhraseMatchOperationToRegexp:       true,
+			ConvertTemplateVariablesToString:          true,
 		},
 		PointFilter: OptimizerConfigPointFilter{
 			ConvertSingleAttributeConjunctionToRegexp: true,

@@ -88,21 +88,12 @@ func (lexer *Lexer) readTemplateVariable() (string, *model.Error) {
 	startIndex := lexer.index
 	lexer.move()
 	var result []byte = []byte{'$'}
-	char, isEof := lexer.currentChar()
-	if isEof {
-		return "", model.NewError("EOF reached while parsing template variable", startIndex, lexer.index-startIndex)
-	}
-	if !isLetter(char) {
-		return "", model.NewError("template variable name must start with a letter", startIndex, lexer.index-startIndex)
-	}
-	result = append(result, char)
-	lexer.move()
 	for range LEXER_MAX_ITERATIONS {
 		char, isEof := lexer.currentChar()
 		if isEof {
 			return "", model.NewError("EOF reached while parsing template variable", startIndex, lexer.index-startIndex)
 		}
-		if !isLetter(char) && !isDigit(char) && !isUnderscore(char) {
+		if !isLetter(char) && !isDigit(char) && !isUnderscore(char) && !isTemplateVariableBracket(char) {
 			break
 		}
 		result = append(result, char)

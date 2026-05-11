@@ -159,8 +159,21 @@ func PointFilter_ConvertContainsOperationToRegexp(pipeline []ast.Stage) ([]ast.S
 	return pipeline, nil
 }
 
+func ConvertTemplateVariablesToStrings(pipeline []ast.Stage) []ast.Stage {
+	for idx := range pipeline {
+		switch typedStage := pipeline[idx].(type) {
+		case *ast.ModifierStageFilter:
+			typedStage.Expr = convertTemplateVariablesToString(typedStage.Expr)
+		}
+	}
+	return pipeline
+}
+
 func OptimizeQueryDefault(query *ast.Query, config OptimizerConfig) (*ast.Query, *model.Error) {
 	// filter optimizations
+	if config.Filter.ConvertTemplateVariablesToString {
+		query.Pipeline = ConvertTemplateVariablesToStrings(query.Pipeline)
+	}
 	if config.Filter.MergeStagesIntoSingleStage {
 		query.Pipeline = Filter_MergeStagesIntoSingleFilterStage(query.Pipeline)
 	}

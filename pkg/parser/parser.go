@@ -434,7 +434,7 @@ func (parser *Parser) parseLabels() ([]ast.Identifier, *model.Error) {
 			parser.move()
 			continue
 		}
-		if token.Type != model.TypeIdentifier && token.Type != model.TypeString && token.Type != model.TypeKeyword {
+		if token.Type != model.TypeIdentifier && token.Type != model.TypeString && token.Type != model.TypeKeyword && token.Type != model.TypeTemplateVariable {
 			return nil, newParserError_unexpected_token_X_of_type_Y(token)
 		}
 		labels = append(labels, ast.Identifier{Value: token.Value, Metadata: getSingleTokenMetadata(token)})

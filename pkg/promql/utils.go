@@ -37,11 +37,15 @@ func isUnderscore(char byte) bool {
 	return char == '_'
 }
 
+func isTemplateVariableChar(char byte) bool {
+	return char == '$' || char == '{' || char == '}'
+}
+
 func promqlAttributeFormat(raw string) string {
 	var result strings.Builder
 	for _, c := range []byte(raw) {
 		switch {
-		case isLetter(c) || isDigit(c) || isUnderscore(c):
+		case isLetter(c) || isDigit(c) || isUnderscore(c) || isTemplateVariableChar(c):
 			result.WriteByte(c)
 		default:
 			result.WriteByte('_')
@@ -53,7 +57,7 @@ func promqlAttributeFormat(raw string) string {
 func tryGetAttributeKey(expr ast.Expression) (string, *model.Error) {
 	switch typedExpr := expr.(type) {
 	case *ast.TemplateVariable:
-		return "$" + typedExpr.Value, nil
+		return typedExpr.Value, nil
 	case *ast.Identifier:
 		return promqlAttributeFormat(typedExpr.Value), nil
 	case *ast.StringLiteral:
