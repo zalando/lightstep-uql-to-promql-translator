@@ -186,6 +186,10 @@ func OptimizeQueryDefault(query *ast.Query, config OptimizerConfig) (*ast.Query,
 			return nil, err
 		}
 		query.Pipeline = pipeline
+
+		if config.Filter.ConvertSingleAttributeConjunctionToRegexp {
+			query.Pipeline = Filter_ConvertSingleAttributeConjunctionToRegexp(query.Pipeline)
+		}
 	}
 	if config.Filter.ConvertExpressionToDisjunctiveNormalForm {
 		pipeline, err := Filter_ConvertExpressionToDisjunctiveNormalForm(query.Pipeline)
